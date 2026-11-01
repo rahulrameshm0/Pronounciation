@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: voicecoach
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      # Must match the model baked into the image (Dockerfile ARG). "base" fits the 512 MB
+      # free/starter plans; use "small" on a 2 GB+ plan for better non-English accuracy.
+      - key: WHISPER_MODEL
+        value: base

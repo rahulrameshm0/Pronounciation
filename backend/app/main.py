@@ -1,15 +1,18 @@
 import json
+import os
 import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .analysis import analyze_voice
 from .audio import SAMPLE_RATE, AudioDecodeError, decode_audio
 from .phonemes import PhonemizerUnavailable, to_ipa
 from .singing import analyze_singing
 from .transcribe import get_model, transcribe
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -64,3 +67,9 @@ async def singing(audio: UploadFile = File(...), notes: str = Form(...)):
     if not targets:
         raise HTTPException(400, "notes must not be empty")
     return analyze_singing(await _load(audio), SAMPLE_RATE, targets)
+
+
+# In production (Docker/Render) the built React app is served from the same origin as the API.
+# Mounted last so /api routes take precedence.
+if (static_dir := os.environ.get("STATIC_DIR")) and os.path.isdir(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="web")
